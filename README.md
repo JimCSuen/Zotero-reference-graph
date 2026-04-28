@@ -2,6 +2,15 @@
 
 Interactive Zotero plugin for visualizing citation relationships between papers as a graph.
 
+![Citation Graph example 1](assets/Example.png)
+
+![Citation Graph example 2](assets/Example2.png)
+
+
+## Download
+
+- Direct download: [Google Drive](https://drive.google.com/file/d/1_NLCpcj_n1pId5F3Pmitx3RHLKc7Ls2H/view?usp=drive_link)
+
 ## Features
 
 - Adds **Tools -> Build Citation Graph Cache**
@@ -14,8 +23,8 @@ Interactive Zotero plugin for visualizing citation relationships between papers 
 - Builds citation edges from:
   - Zotero relations containing `cites`, `references`, or `isCitedBy`
   - DOI references found in `Extra`
-  - DOI references found in child notes
-  - indexed attachment text and normalized title matching
+- DOI references found in child notes
+- indexed attachment text and normalized title matching
 
 ## Build
 
