@@ -59,4 +59,5 @@ For source-based development with Zotero:
 - If a cited DOI is not found in the current Zotero scope, the graph is limited to internal Zotero items and inferred relationships.
 - Large scopes are capped to keep the graph responsive.
 
+## Made by Copilot-CLI
 
