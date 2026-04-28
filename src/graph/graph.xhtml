@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zotero Citation Graph</title>
+    <link rel="stylesheet" href="graph.css" />
+    <script defer="defer" src="graph.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="toolbar">
+        <div class="toolbar-group summary-group">
+          <h1>Zotero Citation Graph</h1>
+          <p id="scope-summary">Loading graph…</p>
+        </div>
+        <div class="toolbar-group controls-group">
+          <label>
+            Search
+            <input id="search-input" type="search" placeholder="Title, author, DOI" />
+          </label>
+          <label>
+            Layout
+            <select id="layout-select">
+              <option value="cose">Force</option>
+              <option value="breadthfirst">Breadth-first</option>
+              <option value="concentric">Concentric</option>
+            </select>
+          </label>
+          <label class="checkbox">
+            <input id="hide-external" type="checkbox" />
+            Hide external nodes
+          </label>
+          <button id="apply-layout" type="button">Relayout</button>
+          <button id="fit-graph" type="button">Fit</button>
+        </div>
+      </header>
+
+      <section class="meta-panel">
+        <div class="stat-card">
+          <span class="stat-label">Internal papers</span>
+          <strong id="internal-count">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">External nodes</span>
+          <strong id="external-count">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Directed edges</span>
+          <strong id="edge-count">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Source heuristics</span>
+          <strong id="source-count">0</strong>
+        </div>
+      </section>
+
+      <section class="warning-panel" id="warnings-panel" hidden="hidden">
+        <h2>Warnings</h2>
+        <ul id="warnings-list"></ul>
+      </section>
+
+      <main class="content">
+        <section class="graph-panel">
+          <div id="graph"></div>
+        </section>
+        <aside class="detail-panel">
+          <h2>Selection</h2>
+          <div id="selection-empty">
+            Click a node to inspect it and jump back to the Zotero item.
+          </div>
+          <div id="selection-content" hidden="hidden">
+            <h3 id="selection-title"></h3>
+            <dl>
+              <dt>Authors</dt>
+              <dd id="selection-authors">-</dd>
+              <dt>Year</dt>
+              <dd id="selection-year">-</dd>
+              <dt>DOI</dt>
+              <dd id="selection-doi">-</dd>
+              <dt>Degree</dt>
+              <dd id="selection-degree">-</dd>
+            </dl>
+            <button id="open-item" type="button">Focus in Zotero</button>
+          </div>
+          <p id="action-status" class="action-status"></p>
+        </aside>
+      </main>
+    </div>
+  </body>
+</html>
+

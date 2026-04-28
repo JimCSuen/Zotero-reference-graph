@@ -1,0 +1,44 @@
+{
+  "name": "zotero-citation-graph",
+  "version": "0.4.2",
+  "description": "Interactive Zotero plugin for visualizing citation relationships as a graph.",
+  "type": "module",
+  "homepage": "https://github.com/Thrillcrazyer/Zotero-Citation-Graph",
+  "author": "TaekHyun Park",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thrillcrazyer/Zotero-Citation-Graph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Thrillcrazyer/Zotero-Citation-Graph/issues"
+  },
+  "config": {
+    "addonName": "Zotero Citation Graph",
+    "addonID": "citation-graph@example.com",
+    "addonRef": "citationgraph",
+    "addonInstance": "CitationGraph",
+    "prefsPrefix": "extensions.zotero.citationgraph"
+  },
+  "scripts": {
+    "build": "zotero-plugin build"
+  },
+  "keywords": [
+    "zotero",
+    "plugin",
+    "citation",
+    "graph",
+    "cytoscape"
+  ],
+  "dependencies": {
+    "cytoscape": "^3.30.4",
+    "d3-force": "^3.0.0"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1",
+    "esbuild": "^0.25.3",
+    "typescript": "^6.0.3",
+    "zotero-plugin": "^9.0.1",
+    "zotero-plugin-scaffold": "^0.8.6",
+    "zotero-types": "^4.1.2"
+  }
+}

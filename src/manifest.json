@@ -1,0 +1,16 @@
+{
+  "manifest_version": 2,
+  "name": "Zotero Citation Graph",
+  "version": "0.1.5",
+  "description": "Visualize citation relationships between Zotero papers as a directed graph.",
+  "homepage_url": "https://example.com/zotero-citation-graph",
+  "author": "TaekHyun Park",
+  "applications": {
+    "zotero": {
+      "id": "citation-graph@taekhyunpark.dev",
+      "strict_min_version": "6.999",
+      "strict_max_version": "12.*"
+    }
+  }
+}
+

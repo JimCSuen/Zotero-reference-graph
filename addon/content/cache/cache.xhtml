@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Citation Graph Cache Status</title>
+    <link rel="stylesheet" href="cache.css" />
+    <script defer="defer" src="../scripts/citationgraph-cache.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <div>
+          <h1>Citation Graph Cache Status</h1>
+          <p id="status-message">Loading cache status...</p>
+        </div>
+        <div class="actions">
+          <button id="build-cache" type="button">Build / Refresh Cache</button>
+          <button id="refresh-status" type="button">Refresh Status</button>
+          <button id="clear-cache" type="button">Clear Cache</button>
+          <button id="open-graph" type="button">Open Graph</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="card">
+          <h2>Current Scope</h2>
+          <dl>
+            <dt>Label</dt>
+            <dd id="current-scope-label">-</dd>
+            <dt>Type</dt>
+            <dd id="current-scope-type">-</dd>
+            <dt>Total Papers</dt>
+            <dd id="current-scope-total">0</dd>
+            <dt>Visible Papers</dt>
+            <dd id="current-scope-visible">0</dd>
+            <dt>Scope Key</dt>
+            <dd id="current-scope-key">-</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2>Prepared Cache</h2>
+          <dl>
+            <dt>Generated At</dt>
+            <dd id="cache-generated-at">-</dd>
+            <dt>Scope</dt>
+            <dd id="cache-scope-label">-</dd>
+            <dt>Nodes</dt>
+            <dd id="cache-node-count">0</dd>
+            <dt>Edges</dt>
+            <dd id="cache-edge-count">0</dd>
+            <dt>State</dt>
+            <dd id="cache-state">-</dd>
+            <dt>Matches Current Scope</dt>
+            <dd id="cache-match">No</dd>
+          </dl>
+        </section>
+
+        <section class="card warnings-card">
+          <h2>Cache Warnings</h2>
+          <ul id="cache-warnings"></ul>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
