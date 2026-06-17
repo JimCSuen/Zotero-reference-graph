@@ -13,11 +13,13 @@ Interactive Zotero plugin for visualizing citation relationships between papers 
 
 ## Features
 
+- Adds a top-level **Citation Graph** menu with **Build Citation Graph Cache** and **Open Citation Graph**
+- Adds toolbar buttons for **Build Graph Cache** and **Open Graph** when Zotero exposes a compatible toolbar
 - Adds **Tools -> Build Citation Graph Cache**
 - Adds **Tools -> Citation Graph Cache Status**
 - Adds **Tools -> Open Citation Graph**
 - Adds **Show Graph** to the Zotero item context menu
-- Opens an interactive graph window with force-based motion, search, node details, and connected-paper navigation
+- Opens the interactive graph inside Zotero as a tab, with an embedded in-window fallback when tabs are unavailable
 - Lets you rebuild the graph directly from the graph window with **Build**
 - Lets you focus a selected graph node back in Zotero
 - Builds citation edges from:
@@ -25,6 +27,29 @@ Interactive Zotero plugin for visualizing citation relationships between papers 
   - DOI references found in `Extra`
 - DOI references found in child notes
 - indexed attachment text and normalized title matching
+
+## Project structure
+
+```text
+.
+|-- addon/                     # Static scaffold assets copied into the built Zotero extension
+|   |-- bootstrap.js            # Zotero bootstrap template for the scaffold build
+|   |-- manifest.json           # Manifest template with scaffold placeholders
+|   `-- content/
+|       |-- cache/              # Cache status XHTML/CSS assets
+|       `-- graph/              # Graph XHTML/CSS assets loaded in Zotero
+|-- assets/                    # README screenshots
+|-- scripts/                   # Legacy/custom build helper
+|-- src/
+|   |-- plugin-core.js          # Main Zotero integration, menu, toolbar, cache, and graph logic
+|   |-- graph-entry.js          # Bundled graph UI runtime
+|   |-- cache-entry.js          # Bundled cache status UI runtime
+|   |-- scaffold-hooks.js       # Zotero plugin lifecycle hooks
+|   `-- index.js                # Scaffold entry point
+|-- typings/                   # Local generated type definitions
+|-- package.json               # Node scripts and dependencies
+`-- zotero-plugin.config.ts    # zotero-plugin-scaffold build configuration
+```
 
 ## Build
 

@@ -158,8 +158,28 @@ const CitationGraphPlugin = {
     return window && window.ZoteroPane ? window : this.getDefaultHostWindow();
   },
 
+  createXULElement(doc, name) {
+    return typeof doc.createXULElement === "function"
+      ? doc.createXULElement(name)
+      : doc.createElement(name);
+  },
+
+  createCommandMenuItem(doc, id, label, command) {
+    const menuItem = this.createXULElement(doc, "menuitem");
+    menuItem.id = id;
+    menuItem.setAttribute("label", label);
+    menuItem.addEventListener("command", command);
+    return menuItem;
+  },
+
   addToWindow(window) {
     const doc = window.document;
+    this.addToolsMenuItems(window, doc);
+    this.addTopLevelMenu(window, doc);
+    this.addToolbarButtons(window, doc);
+  },
+
+  addToolsMenuItems(window, doc) {
     const menuRoot =
       doc.getElementById("menu_ToolsPopup") || doc.getElementById("menu_viewPopup");
 
@@ -167,26 +187,32 @@ const CitationGraphPlugin = {
       return;
     }
 
-    const buildMenuItem = doc.createXULElement("menuitem");
-    buildMenuItem.id = "citation-graph-build-cache-menuitem";
-    buildMenuItem.setAttribute("label", "Build Citation Graph Cache");
-    buildMenuItem.addEventListener("command", () => {
-      void this.buildCurrentCacheWithFeedback(window);
-    });
+    const buildMenuItem = this.createCommandMenuItem(
+      doc,
+      "citation-graph-build-cache-menuitem",
+      "Build Citation Graph Cache",
+      () => {
+        void this.buildCurrentCacheWithFeedback(window);
+      },
+    );
 
-    const statusMenuItem = doc.createXULElement("menuitem");
-    statusMenuItem.id = "citation-graph-cache-status-menuitem";
-    statusMenuItem.setAttribute("label", "Citation Graph Cache Status");
-    statusMenuItem.addEventListener("command", () => {
-      void this.openCacheStatusWindow(window);
-    });
+    const statusMenuItem = this.createCommandMenuItem(
+      doc,
+      "citation-graph-cache-status-menuitem",
+      "Citation Graph Cache Status",
+      () => {
+        void this.openCacheStatusWindow(window);
+      },
+    );
 
-    const openMenuItem = doc.createXULElement("menuitem");
-    openMenuItem.id = "citation-graph-open-menuitem";
-    openMenuItem.setAttribute("label", "Open Citation Graph");
-    openMenuItem.addEventListener("command", () => {
-      void this.openGraphWindow(window);
-    });
+    const openMenuItem = this.createCommandMenuItem(
+      doc,
+      "citation-graph-open-menuitem",
+      "Open Citation Graph",
+      () => {
+        void this.openGraphWindow(window);
+      },
+    );
 
     menuRoot.appendChild(buildMenuItem);
     menuRoot.appendChild(statusMenuItem);
@@ -195,6 +221,145 @@ const CitationGraphPlugin = {
     this.storeAddedElement(window, buildMenuItem.id);
     this.storeAddedElement(window, statusMenuItem.id);
     this.storeAddedElement(window, openMenuItem.id);
+  },
+
+  addTopLevelMenu(window, doc) {
+    if (doc.getElementById("citation-graph-top-menu")) {
+      return;
+    }
+
+    const helpMenu =
+      doc.getElementById("menu_Help") ||
+      doc.getElementById("menu-help") ||
+      doc.getElementById("helpMenu");
+    const toolsMenu =
+      doc.getElementById("menu_Tools") ||
+      doc.getElementById("tools-menu") ||
+      doc.getElementById("menu_tools");
+    const menubar =
+      helpMenu?.parentNode ||
+      toolsMenu?.parentNode ||
+      doc.getElementById("main-menubar") ||
+      doc.querySelector("menubar");
+
+    if (!menubar) {
+      return;
+    }
+
+    const menu = this.createXULElement(doc, "menu");
+    menu.id = "citation-graph-top-menu";
+    menu.setAttribute("label", "Citation Graph");
+
+    const popup = this.createXULElement(doc, "menupopup");
+    popup.id = "citation-graph-top-menu-popup";
+    popup.appendChild(
+      this.createCommandMenuItem(
+        doc,
+        "citation-graph-top-build-cache-menuitem",
+        "Build Citation Graph Cache",
+        () => {
+          void this.buildCurrentCacheWithFeedback(window);
+        },
+      ),
+    );
+    popup.appendChild(
+      this.createCommandMenuItem(
+        doc,
+        "citation-graph-top-open-menuitem",
+        "Open Citation Graph",
+        () => {
+          void this.openGraphWindow(window);
+        },
+      ),
+    );
+    menu.appendChild(popup);
+
+    if (helpMenu && helpMenu.parentNode === menubar) {
+      menubar.insertBefore(menu, helpMenu);
+    } else {
+      menubar.appendChild(menu);
+    }
+
+    this.storeAddedElement(window, menu.id);
+  },
+
+  getToolbarTarget(doc) {
+    // Zotero toolbar IDs vary across major versions and pane layouts.
+    const toolbarCandidates = [
+      "zotero-items-toolbar",
+      "zotero-toolbar",
+      "zotero-items-pane-toolbar",
+      "zotero-collections-toolbar",
+    ];
+
+    for (const id of toolbarCandidates) {
+      const element = doc.getElementById(id);
+      if (element) {
+        return element;
+      }
+    }
+
+    return (
+      doc.querySelector("#zotero-items-pane toolbar") ||
+      doc.querySelector("#zotero-pane toolbar")
+    );
+  },
+
+  createToolbarButton(doc, id, label, tooltip, command) {
+    const button = this.createXULElement(doc, "toolbarbutton");
+    button.id = id;
+    button.setAttribute("label", label);
+    button.setAttribute("tooltiptext", tooltip);
+    button.setAttribute("type", "button");
+    button.classList.add("toolbarbutton-1");
+    button.style.marginInlineStart = "4px";
+    button.style.paddingInline = "8px";
+    button.addEventListener("command", command);
+    return button;
+  },
+
+  addToolbarButtons(window, doc) {
+    if (doc.getElementById("citation-graph-toolbar-buttons")) {
+      return;
+    }
+
+    const toolbar = this.getToolbarTarget(doc);
+    if (!toolbar) {
+      return;
+    }
+
+    const group = this.createXULElement(doc, "toolbaritem");
+    group.id = "citation-graph-toolbar-buttons";
+    group.setAttribute("align", "center");
+    group.style.display = "inline-flex";
+    group.style.alignItems = "center";
+    group.style.gap = "4px";
+
+    group.appendChild(
+      this.createToolbarButton(
+        doc,
+        "citation-graph-toolbar-build-cache-button",
+        "Build Graph Cache",
+        "Build Citation Graph Cache",
+        () => {
+          void this.buildCurrentCacheWithFeedback(window);
+        },
+      ),
+    );
+    group.appendChild(
+      this.createToolbarButton(
+        doc,
+        "citation-graph-toolbar-open-button",
+        "Open Graph",
+        "Open Citation Graph in Zotero",
+        () => {
+          void this.openGraphWindow(window);
+        },
+      ),
+    );
+
+    toolbar.appendChild(group);
+    this.storeAddedElement(window, group.id);
   },
 
   removeFromWindow(window) {
@@ -207,6 +372,16 @@ const CitationGraphPlugin = {
       }
     }
     const state = this.windowStates.get(window);
+    if (state && state.tabID) {
+      const tabs = this.getZoteroTabs(window);
+      try {
+        if (tabs && this.isGraphTabOpen(window, state)) {
+          tabs.close(state.tabID);
+        }
+      } catch (error) {
+        this.log(`Failed to close citation graph tab: ${error}`);
+      }
+    }
     if (state && state.panel && state.panel.parentNode) {
       state.panel.parentNode.removeChild(state.panel);
     }
@@ -423,7 +598,7 @@ const CitationGraphPlugin = {
     return graphData;
   },
 
-  async getCacheStatus(hostWindow) {
+  async getCacheStatus(hostWindow, options = {}) {
     const scope = await this.resolveCurrentScope(hostWindow, options);
     const cache = this.readCache();
     const currentScope = this.createScopeSummary(scope);
@@ -482,20 +657,7 @@ const CitationGraphPlugin = {
     try {
       const graphData = await this.loadGraphPayload(hostWindow, options);
       this.writeGraphWindowPayload(graphData);
-      const existingGraphWindow = this.getOpenGraphDialogWindow();
-      if (existingGraphWindow) {
-        this.tryRenderGraphDialog(existingGraphWindow, { graphData });
-        existingGraphWindow.focus();
-        return existingGraphWindow;
-      }
-
-      const dialogWindow = hostWindow.openDialog(
-        this.graphURL,
-        "citation-graph-window",
-        "chrome,resizable=yes,centerscreen,width=1440,height=920",
-      );
-      this.attachGraphDialogWindow(dialogWindow);
-      return dialogWindow;
+      return await this.showEmbeddedGraph(hostWindow, graphData);
     } catch (error) {
       this.log(`Failed to open graph window: ${error}`);
       hostWindow.alert(`Citation Graph failed: ${error.message || error}`);
@@ -544,6 +706,127 @@ const CitationGraphPlugin = {
     });
   },
 
+  ensureWindowState(hostWindow) {
+    if (!this.windowStates.has(hostWindow)) {
+      this.windowStates.set(hostWindow, {
+        tabID: null,
+        tabContainer: null,
+        tabFrame: null,
+        tabReady: null,
+        panel: null,
+        frame: null,
+        resizer: null,
+        ready: null,
+      });
+    }
+    return this.windowStates.get(hostWindow);
+  },
+
+  getZoteroTabs(hostWindow) {
+    return hostWindow && hostWindow.Zotero_Tabs && typeof hostWindow.Zotero_Tabs.add === "function"
+      ? hostWindow.Zotero_Tabs
+      : null;
+  },
+
+  isGraphTabOpen(hostWindow, state) {
+    const tabs = this.getZoteroTabs(hostWindow);
+    if (!tabs || !state?.tabID || typeof tabs.getTabInfo !== "function") {
+      return false;
+    }
+
+    try {
+      return !!tabs.getTabInfo(state.tabID);
+    } catch (_error) {
+      return false;
+    }
+  },
+
+  clearGraphTabState(state) {
+    state.tabID = null;
+    state.tabContainer = null;
+    state.tabFrame = null;
+    state.tabReady = null;
+  },
+
+  createFrameReadyPromise(frame) {
+    return new Promise((resolve) => {
+      if (frame.contentWindow && typeof frame.contentWindow.renderCitationGraph === "function") {
+        resolve();
+        return;
+      }
+      frame.addEventListener(
+        "load",
+        () => {
+          resolve();
+        },
+        { once: true },
+      );
+    });
+  },
+
+  async ensureGraphTab(hostWindow) {
+    // Prefer a real Zotero tab so the graph stays inside the main app chrome.
+    const tabs = this.getZoteroTabs(hostWindow);
+    if (!tabs) {
+      return null;
+    }
+
+    const state = this.ensureWindowState(hostWindow);
+    if (this.isGraphTabOpen(hostWindow, state) && state.tabFrame) {
+      tabs.select(state.tabID);
+      return {
+        frame: state.tabFrame,
+        ready: state.tabReady,
+        panel: null,
+      };
+    }
+
+    this.clearGraphTabState(state);
+
+    let tab;
+    try {
+      tab = tabs.add({
+        type: "citation-graph",
+        title: "Citation Graph",
+        select: true,
+        onClose: () => {
+          if (state.tabID === tab.id) {
+            this.clearGraphTabState(state);
+          }
+        },
+      });
+    } catch (error) {
+      this.log(`Could not create a Zotero tab for the graph: ${error}`);
+      return null;
+    }
+
+    const doc = hostWindow.document;
+    const frame = doc.createElement("iframe");
+    frame.id = "citation-graph-tab-frame";
+    frame.setAttribute("src", this.graphURL);
+    frame.style.width = "100%";
+    frame.style.height = "100%";
+    frame.style.border = "0";
+    frame.style.background = "#ffffff";
+
+    tab.container.style.display = "flex";
+    tab.container.style.flexDirection = "column";
+    tab.container.style.minHeight = "0";
+    tab.container.style.height = "100%";
+    tab.container.appendChild(frame);
+
+    state.tabID = tab.id;
+    state.tabContainer = tab.container;
+    state.tabFrame = frame;
+    state.tabReady = this.createFrameReadyPromise(frame);
+
+    return {
+      frame: state.tabFrame,
+      ready: state.tabReady,
+      panel: null,
+    };
+  },
+
   getGraphMountTarget(hostWindow) {
     const doc = hostWindow.document;
     return (
@@ -552,18 +835,6 @@ const CitationGraphPlugin = {
       doc.querySelector("#zotero-items-pane") ||
       doc.querySelector("#zotero-layout-body")
     );
-  },
-
-  ensureWindowState(hostWindow) {
-    if (!this.windowStates.has(hostWindow)) {
-      this.windowStates.set(hostWindow, {
-        panel: null,
-        frame: null,
-        resizer: null,
-        ready: null,
-      });
-    }
-    return this.windowStates.get(hostWindow);
   },
 
   async ensureEmbeddedGraphPanel(hostWindow) {
@@ -628,20 +899,17 @@ const CitationGraphPlugin = {
     state.panel = panel;
     state.frame = frame;
     state.resizer = resizer;
-    state.ready = new Promise((resolve) => {
-      if (frame.contentWindow && typeof frame.contentWindow.renderCitationGraph === "function") {
-        resolve();
-        return;
-      }
-      frame.addEventListener(
-        "load",
-        () => {
-          resolve();
-        },
-        { once: true },
-      );
-    });
+    state.ready = this.createFrameReadyPromise(frame);
     return state;
+  },
+
+  async ensureInAppGraphView(hostWindow) {
+    const tabState = await this.ensureGraphTab(hostWindow);
+    if (tabState) {
+      return tabState;
+    }
+
+    return this.ensureEmbeddedGraphPanel(hostWindow);
   },
 
   wait(hostWindow, milliseconds) {
@@ -759,9 +1027,9 @@ const CitationGraphPlugin = {
   },
 
   async pushGraphPayload(hostWindow, graphData) {
-    const state = await this.ensureEmbeddedGraphPanel(hostWindow);
+    const state = await this.ensureInAppGraphView(hostWindow);
     await state.ready;
-    const frameWindow = state.frame.contentWindow;
+    const frameWindow = state.frame?.contentWindow;
     if (!frameWindow) {
       throw new Error("Citation graph frame did not initialize.");
     }
@@ -779,14 +1047,20 @@ const CitationGraphPlugin = {
   },
 
   async showEmbeddedGraph(hostWindow, graphData) {
-    const state = await this.ensureEmbeddedGraphPanel(hostWindow);
-    state.panel.style.display = "";
+    const state = await this.ensureInAppGraphView(hostWindow);
+    if (state.panel) {
+      state.panel.style.display = "";
+    }
     await this.pushGraphPayload(hostWindow, graphData);
+    return state;
   },
 
   async refreshEmbeddedGraph(hostWindow, graphData = null) {
     const state = this.windowStates.get(hostWindow);
-    if (!state || !state.panel || state.panel.style.display === "none") {
+    const hasOpenTab = state && this.isGraphTabOpen(hostWindow, state) && state.tabFrame;
+    const hasVisiblePanel =
+      state && state.panel && state.panel.style.display !== "none";
+    if (!hasOpenTab && !hasVisiblePanel) {
       return;
     }
     await this.pushGraphPayload(
