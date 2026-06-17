@@ -56,7 +56,7 @@ body {
 .controls-group {
   margin-left: auto;
   display: grid;
-  grid-template-columns: minmax(360px, 520px) auto;
+  grid-template-columns: minmax(300px, 520px) auto auto;
   gap: 12px;
   align-items: end;
   justify-content: end;

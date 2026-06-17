@@ -1244,6 +1244,26 @@ function bindControls(payload, selection) {
       button.disabled = false;
     }
   };
+
+  const closeButton = byId("close-graph");
+  if (closeButton) {
+    closeButton.onclick = async () => {
+      const actionStatus = byId("action-status");
+      const hostWindow = resolveHostWindow(payload);
+      const api = getCitationGraphApi();
+
+      if (!hostWindow || !api || typeof api.closeGraphView !== "function") {
+        actionStatus.textContent = "Could not close the citation graph from this window.";
+        return;
+      }
+
+      try {
+        api.closeGraphView(hostWindow);
+      } catch (error) {
+        actionStatus.textContent = `Could not close graph: ${error.message || error}`;
+      }
+    };
+  }
 }
 
 function render(payload = getPayload()) {

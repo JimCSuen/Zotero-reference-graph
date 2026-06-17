@@ -19,6 +19,9 @@ async function onStartup() {
     openGraphWindow(hostWindow, options) {
       return CitationGraphPlugin.openGraphWindow(hostWindow, options);
     },
+    closeGraphView(hostWindow) {
+      return CitationGraphPlugin.closeGraphView(hostWindow);
+    },
   };
   CitationGraphPlugin.addToAllWindows();
   addon.data.initialized = true;

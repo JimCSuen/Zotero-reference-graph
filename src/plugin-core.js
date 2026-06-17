@@ -175,7 +175,7 @@ const CitationGraphPlugin = {
   addToWindow(window) {
     const doc = window.document;
     this.addToolsMenuItems(window, doc);
-    this.addTopLevelMenu(window, doc);
+    this.addMenubarButtons(window, doc);
     this.addToolbarButtons(window, doc);
   },
 
@@ -223,11 +223,7 @@ const CitationGraphPlugin = {
     this.storeAddedElement(window, openMenuItem.id);
   },
 
-  addTopLevelMenu(window, doc) {
-    if (doc.getElementById("citation-graph-top-menu")) {
-      return;
-    }
-
+  getMainMenubar(doc) {
     const helpMenu =
       doc.getElementById("menu_Help") ||
       doc.getElementById("menu-help") ||
@@ -236,51 +232,97 @@ const CitationGraphPlugin = {
       doc.getElementById("menu_Tools") ||
       doc.getElementById("tools-menu") ||
       doc.getElementById("menu_tools");
-    const menubar =
-      helpMenu?.parentNode ||
-      toolsMenu?.parentNode ||
-      doc.getElementById("main-menubar") ||
-      doc.querySelector("menubar");
+
+    return {
+      helpMenu,
+      toolsMenu,
+      menubar:
+        helpMenu?.parentNode ||
+        toolsMenu?.parentNode ||
+        doc.getElementById("main-menubar") ||
+        doc.querySelector("menubar"),
+    };
+  },
+
+  createMenubarButton(doc, id, label, tooltip, command) {
+    const button = this.createXULElement(doc, "toolbarbutton");
+    button.id = id;
+    button.setAttribute("label", label);
+    button.setAttribute("tooltiptext", tooltip);
+    button.setAttribute("type", "button");
+    button.classList.add("toolbarbutton-1");
+    button.style.appearance = "none";
+    button.style.background = "transparent";
+    button.style.border = "0";
+    button.style.borderRadius = "4px";
+    button.style.color = "inherit";
+    button.style.cursor = "default";
+    button.style.font = "inherit";
+    button.style.margin = "0 2px";
+    button.style.minHeight = "24px";
+    button.style.padding = "2px 8px";
+    button.addEventListener("mouseenter", () => {
+      button.style.background = "rgba(0, 0, 0, 0.08)";
+    });
+    button.addEventListener("mouseleave", () => {
+      button.style.background = "transparent";
+    });
+    button.addEventListener("command", command);
+    return button;
+  },
+
+  addMenubarButtons(window, doc) {
+    if (doc.getElementById("citation-graph-menubar-buttons")) {
+      return;
+    }
+
+    const oldTopMenu = doc.getElementById("citation-graph-top-menu");
+    if (oldTopMenu) {
+      oldTopMenu.remove();
+    }
+
+    const { helpMenu, menubar } = this.getMainMenubar(doc);
 
     if (!menubar) {
       return;
     }
 
-    const menu = this.createXULElement(doc, "menu");
-    menu.id = "citation-graph-top-menu";
-    menu.setAttribute("label", "Citation Graph");
+    const group = this.createXULElement(doc, "hbox");
+    group.id = "citation-graph-menubar-buttons";
+    group.setAttribute("align", "center");
+    group.style.display = "inline-flex";
+    group.style.alignItems = "center";
 
-    const popup = this.createXULElement(doc, "menupopup");
-    popup.id = "citation-graph-top-menu-popup";
-    popup.appendChild(
-      this.createCommandMenuItem(
+    group.appendChild(
+      this.createMenubarButton(
         doc,
-        "citation-graph-top-build-cache-menuitem",
+        "citation-graph-menubar-build-cache-button",
+        "Build Citation Graph Cache",
         "Build Citation Graph Cache",
         () => {
           void this.buildCurrentCacheWithFeedback(window);
         },
       ),
     );
-    popup.appendChild(
-      this.createCommandMenuItem(
+    group.appendChild(
+      this.createMenubarButton(
         doc,
-        "citation-graph-top-open-menuitem",
+        "citation-graph-menubar-open-button",
+        "Open Citation Graph",
         "Open Citation Graph",
         () => {
           void this.openGraphWindow(window);
         },
       ),
     );
-    menu.appendChild(popup);
 
     if (helpMenu && helpMenu.parentNode === menubar) {
-      menubar.insertBefore(menu, helpMenu);
+      menubar.insertBefore(group, helpMenu);
     } else {
-      menubar.appendChild(menu);
+      menubar.appendChild(group);
     }
 
-    this.storeAddedElement(window, menu.id);
+    this.storeAddedElement(window, group.id);
   },
 
   getToolbarTarget(doc) {
@@ -382,9 +424,7 @@ const CitationGraphPlugin = {
         this.log(`Failed to close citation graph tab: ${error}`);
       }
     }
-    if (state && state.panel && state.panel.parentNode) {
-      state.panel.parentNode.removeChild(state.panel);
-    }
+    this.removeEmbeddedGraphPanel(window);
     this.windowStates.delete(window);
     this.windowElements.delete(window);
   },
@@ -714,6 +754,8 @@ const CitationGraphPlugin = {
         tabFrame: null,
         tabReady: null,
         panel: null,
+        panelMountTarget: null,
+        panelMountPreviousPosition: null,
         frame: null,
         resizer: null,
         ready: null,
@@ -830,11 +872,62 @@ const CitationGraphPlugin = {
   getGraphMountTarget(hostWindow) {
     const doc = hostWindow.document;
     return (
-      doc.querySelector("#item-tree-main-default") ||
-      doc.querySelector("#item-tree-main") ||
-      doc.querySelector("#zotero-items-pane") ||
-      doc.querySelector("#zotero-layout-body")
+      doc.getElementById("zotero-layout-body") ||
+      doc.getElementById("zotero-pane") ||
+      doc.getElementById("zotero-items-pane") ||
+      doc.getElementById("item-tree-main-default") ||
+      doc.getElementById("item-tree-main") ||
+      doc.body ||
+      doc.documentElement
     );
+  },
+
+  removeEmbeddedGraphPanel(hostWindow) {
+    const state = this.windowStates.get(hostWindow);
+    if (!state) {
+      return false;
+    }
+
+    if (state.panel && state.panel.parentNode) {
+      state.panel.parentNode.removeChild(state.panel);
+    }
+
+    if (state.panelMountTarget && state.panelMountPreviousPosition != null) {
+      state.panelMountTarget.style.position = state.panelMountPreviousPosition;
+    }
+
+    state.panel = null;
+    state.panelMountTarget = null;
+    state.panelMountPreviousPosition = null;
+    state.frame = null;
+    state.resizer = null;
+    state.ready = null;
+    return true;
+  },
+
+  closeGraphView(hostWindow = null) {
+    hostWindow = hostWindow || this.getDefaultHostWindow();
+    if (!hostWindow) {
+      return false;
+    }
+
+    const state = this.windowStates.get(hostWindow);
+    if (!state) {
+      return false;
+    }
+
+    const tabs = this.getZoteroTabs(hostWindow);
+    if (tabs && this.isGraphTabOpen(hostWindow, state)) {
+      try {
+        tabs.close(state.tabID);
+        this.clearGraphTabState(state);
+        return true;
+      } catch (error) {
+        this.log(`Failed to close citation graph tab: ${error}`);
+      }
+    }
+
+    return this.removeEmbeddedGraphPanel(hostWindow);
   },
 
   async ensureEmbeddedGraphPanel(hostWindow) {
@@ -851,54 +944,82 @@ const CitationGraphPlugin = {
     const doc = hostWindow.document;
     const panel = doc.createElement("div");
     panel.id = "citation-graph-embedded-panel";
+    panel.style.position = "absolute";
+    panel.style.inset = "0";
+    panel.style.zIndex = "10000";
     panel.style.width = "100%";
-    panel.style.height = "420px";
-    panel.style.minHeight = "220px";
+    panel.style.height = "100%";
+    panel.style.minHeight = "320px";
     panel.style.display = "none";
-    panel.style.position = "relative";
-    panel.style.borderTop = "1px solid #d8e0ec";
-    panel.style.background = "#f5f7fb";
+    panel.style.flexDirection = "column";
+    panel.style.minWidth = "0";
+    panel.style.overflow = "hidden";
+    panel.style.border = "1px solid #cfd8e3";
+    panel.style.background = "#ffffff";
+    panel.style.boxShadow = "0 10px 30px rgba(15, 23, 42, 0.18)";
 
-    const resizer = doc.createElement("div");
-    resizer.id = "citation-graph-embedded-resizer";
-    resizer.style.height = "4px";
-    resizer.style.cursor = "ns-resize";
-    resizer.style.background = "#cbd5e1";
-    resizer.style.flexShrink = "0";
+    const header = doc.createElement("div");
+    header.id = "citation-graph-embedded-header";
+    header.style.display = "flex";
+    header.style.alignItems = "center";
+    header.style.justifyContent = "space-between";
+    header.style.flex = "0 0 auto";
+    header.style.minHeight = "42px";
+    header.style.padding = "0 12px";
+    header.style.borderBottom = "1px solid #d8e0ec";
+    header.style.background = "#f8fafc";
+
+    const title = doc.createElement("strong");
+    title.textContent = "Citation Graph";
+    title.style.fontSize = "13px";
+    title.style.fontWeight = "600";
+    title.style.color = "#111827";
+
+    const closeButton = doc.createElement("button");
+    closeButton.id = "citation-graph-embedded-close-button";
+    closeButton.type = "button";
+    closeButton.textContent = "Close";
+    closeButton.setAttribute("aria-label", "Close Citation Graph");
+    closeButton.style.minHeight = "28px";
+    closeButton.style.border = "1px solid #cbd5e1";
+    closeButton.style.borderRadius = "6px";
+    closeButton.style.padding = "4px 10px";
+    closeButton.style.background = "#ffffff";
+    closeButton.style.color = "#111827";
+    closeButton.style.cursor = "pointer";
+    closeButton.addEventListener("click", () => {
+      this.closeGraphView(hostWindow);
+    });
+
+    header.appendChild(title);
+    header.appendChild(closeButton);
 
     const frame = doc.createElement("iframe");
     frame.id = "citation-graph-embedded-frame";
     frame.setAttribute("src", this.graphURL);
     frame.style.width = "100%";
-    frame.style.height = "calc(100% - 4px)";
+    frame.style.height = "100%";
+    frame.style.flex = "1 1 auto";
+    frame.style.minHeight = "0";
     frame.style.border = "0";
     frame.style.background = "#ffffff";
 
-    panel.appendChild(resizer);
+    panel.appendChild(header);
     panel.appendChild(frame);
-    mountTarget.appendChild(panel);
 
-    let startY = 0;
-    let startHeight = 0;
-    const onMouseMove = (event) => {
-      const delta = startY - event.clientY;
-      const nextHeight = Math.max(220, startHeight + delta);
-      panel.style.height = `${nextHeight}px`;
-    };
-    const onMouseUp = () => {
-      hostWindow.removeEventListener("mousemove", onMouseMove, true);
-      hostWindow.removeEventListener("mouseup", onMouseUp, true);
-    };
-    resizer.addEventListener("mousedown", (event) => {
-      startY = event.clientY;
-      startHeight = panel.getBoundingClientRect().height;
-      hostWindow.addEventListener("mousemove", onMouseMove, true);
-      hostWindow.addEventListener("mouseup", onMouseUp, true);
-    });
+    const computedPosition = hostWindow.getComputedStyle(mountTarget).position;
+    if (!computedPosition || computedPosition === "static") {
+      state.panelMountPreviousPosition = mountTarget.style.position || "";
+      mountTarget.style.position = "relative";
+    } else {
+      state.panelMountPreviousPosition = null;
+    }
+    state.panelMountTarget = mountTarget;
+    mountTarget.appendChild(panel);
 
     state.panel = panel;
     state.frame = frame;
-    state.resizer = resizer;
+    state.resizer = null;
     state.ready = this.createFrameReadyPromise(frame);
     return state;
   },
@@ -1049,7 +1170,7 @@ const CitationGraphPlugin = {
   async showEmbeddedGraph(hostWindow, graphData) {
     const state = await this.ensureInAppGraphView(hostWindow);
     if (state.panel) {
-      state.panel.style.display = "";
+      state.panel.style.display = "flex";
     }
     await this.pushGraphPayload(hostWindow, graphData);
     return state;

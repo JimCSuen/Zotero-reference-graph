@@ -13,13 +13,13 @@ Interactive Zotero plugin for visualizing citation relationships between papers 
 
 ## Features
 
-- Adds a top-level **Citation Graph** menu with **Build Citation Graph Cache** and **Open Citation Graph**
+- Adds direct menubar buttons for **Build Citation Graph Cache** and **Open Citation Graph**
 - Adds toolbar buttons for **Build Graph Cache** and **Open Graph** when Zotero exposes a compatible toolbar
 - Adds **Tools -> Build Citation Graph Cache**
 - Adds **Tools -> Citation Graph Cache Status**
 - Adds **Tools -> Open Citation Graph**
 - Adds **Show Graph** to the Zotero item context menu
-- Opens the interactive graph inside Zotero as a tab, with an embedded in-window fallback when tabs are unavailable
+- Opens the interactive graph inside Zotero as a tab, with a closable embedded overlay fallback when tabs are unavailable
 - Lets you rebuild the graph directly from the graph window with **Build**
 - Lets you focus a selected graph node back in Zotero
 - Builds citation edges from:
