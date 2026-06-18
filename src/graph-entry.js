@@ -1279,13 +1279,19 @@ function bindControls(payload, selection) {
       const hostWindow = resolveHostWindow(payload);
       const api = getCitationGraphApi();
 
-      if (!hostWindow || !api || typeof api.closeGraphView !== "function") {
-        actionStatus.textContent = "Could not close the citation graph from this window.";
-        return;
-      }
-
       try {
-        api.closeGraphView(hostWindow);
+        if (hostWindow && api && typeof api.closeGraphView === "function") {
+          if (api.closeGraphView(hostWindow)) {
+            return;
+          }
+        }
+
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "citation-graph:close" }, "*");
+          return;
+        }
+
+        actionStatus.textContent = "Could not close the citation graph from this window.";
       } catch (error) {
         actionStatus.textContent = `Could not close graph: ${error.message || error}`;
       }

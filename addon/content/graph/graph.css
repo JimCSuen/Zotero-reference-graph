@@ -163,18 +163,28 @@ body {
 
 .warning-panel {
   position: absolute;
-  right: 12px;
-  bottom: 18px;
+  left: 12px;
+  bottom: 14px;
   z-index: 40;
-  width: min(620px, calc(100% - 24px));
-  max-height: min(42vh, 320px);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: min(440px, calc(100% - 24px));
+  max-height: min(30vh, 220px);
   overflow: auto;
   margin: 0;
-  padding: 10px 12px 12px;
+  padding: 8px 10px;
   border: 1px solid #f59e0b;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fffbeb;
-  box-shadow: 0 12px 28px rgba(120, 53, 15, 0.16);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  color: #78350f;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.warning-panel[hidden] {
+  display: none;
 }
 
 .error-panel {
@@ -187,55 +197,40 @@ body {
   font-size: 14px;
 }
 
-.warning-toast-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.warning-panel h2 {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: #78350f;
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .warning-mark {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
   border-radius: 50%;
   background: #f59e0b;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .warning-close {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(146, 64, 14, 0.28);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.86);
+  width: 22px;
+  height: 22px;
+  margin: -2px -3px -2px 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: #78350f;
   cursor: pointer;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
 }
 
 .warning-close:hover {
-  background: #ffffff;
-  border-color: rgba(146, 64, 14, 0.48);
+  background: rgba(146, 64, 14, 0.1);
 }
 
 .warning-panel ul,
@@ -244,6 +239,18 @@ body {
   padding-left: 18px;
   color: #374151;
   white-space: pre-wrap;
+}
+
+.warning-panel ul {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 0;
+  list-style: none;
+  color: #78350f;
+}
+
+.warning-panel li + li {
+  margin-top: 4px;
 }
 
 .content {

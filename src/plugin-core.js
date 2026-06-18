@@ -749,6 +749,7 @@ const CitationGraphPlugin = {
         frame: null,
         resizer: null,
         ready: null,
+        closeMessageListener: null,
       });
     }
     return this.windowStates.get(hostWindow);
@@ -787,6 +788,11 @@ const CitationGraphPlugin = {
     const state = this.windowStates.get(hostWindow);
     if (!state) {
       return false;
+    }
+
+    if (state.closeMessageListener) {
+      hostWindow.removeEventListener("message", state.closeMessageListener);
+      state.closeMessageListener = null;
     }
 
     if (state.panel && state.panel.parentNode) {
@@ -859,6 +865,29 @@ const CitationGraphPlugin = {
     frame.style.background = "#ffffff";
 
     panel.appendChild(frame);
+
+    state.closeMessageListener = (event) => {
+      if (!event.data || event.data.type !== "citation-graph:close") {
+        return;
+      }
+
+      const frameWindow = frame.contentWindow;
+      let wrappedFrameWindow = null;
+      try {
+        wrappedFrameWindow = frameWindow && frameWindow.wrappedJSObject;
+      } catch (_error) {}
+      if (
+        event.source &&
+        frameWindow &&
+        event.source !== frameWindow &&
+        event.source !== wrappedFrameWindow
+      ) {
+        return;
+      }
+
+      this.closeGraphView(hostWindow);
+    };
+    hostWindow.addEventListener("message", state.closeMessageListener);
 
     const computedPosition = hostWindow.getComputedStyle(mountTarget).position;
     if (!computedPosition || computedPosition === "static") {
