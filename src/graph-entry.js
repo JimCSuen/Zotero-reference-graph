@@ -336,6 +336,10 @@ function normalizeSearch(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function hasActiveSearch() {
+  return !!normalizeSearch(currentState.query);
+}
+
 function truncateLabel(value, limit = 34) {
   const text = String(value || "").trim();
   if (!text) {
@@ -1051,32 +1055,36 @@ function applyVisualState(selection) {
   const visibleElements = getVisibleElements();
   const matches = getSearchMatches();
   const selectedNode = getSelectedNode();
+  const searchActive = hasActiveSearch();
 
   cy.batch(() => {
     cy.elements().removeClass("is-muted is-neighbor is-selected is-match");
 
-    if (visibleElements && visibleElements.length && (selectedNode || matches.length)) {
+    if (visibleElements && visibleElements.length && (selectedNode || searchActive)) {
       visibleElements.addClass("is-muted");
     }
 
-    if (selectedNode) {
+    if (selectedNode && !searchActive) {
       const focusedNeighborhood = selectedNode.closedNeighborhood().filter(":visible");
       focusedNeighborhood.removeClass("is-muted").addClass("is-neighbor");
       selectedNode.removeClass("is-neighbor").addClass("is-selected");
     }
 
-    if (matches.length) {
+    if (searchActive && matches.length) {
+      matches.closedNeighborhood().filter(":visible").removeClass("is-muted").addClass("is-neighbor");
       matches.removeClass("is-muted").addClass("is-match");
       matches.connectedEdges().filter(":visible").removeClass("is-muted");
     }
   });
 
-  if (selectedNode) {
+  if (selectedNode && !searchActive) {
     selection.showNode(extractNodeData(selectedNode));
     return;
   }
 
-  currentState.selectedNodeID = null;
+  if (searchActive) {
+    currentState.selectedNodeID = null;
+  }
   selection.clear();
 }
 
@@ -1100,6 +1108,14 @@ function runLayout(fit = true) {
 function getFitCollection() {
   if (!currentState.cy) {
     return null;
+  }
+
+  if (hasActiveSearch()) {
+    const matches = getSearchMatches();
+    if (matches.length) {
+      const focusedMatches = matches.closedNeighborhood().filter(":visible");
+      return focusedMatches.length ? focusedMatches : matches;
+    }
   }
 
   const selectedNode = getSelectedNode();
@@ -1241,13 +1257,17 @@ function initializeGraph(payload, selection) {
 }
 
 function bindControls(payload, selection) {
-  byId("search-input").oninput = (event) => {
-    currentState.query = event.target.value;
-    applyVisualState(selection);
-    if (!currentState.selectedNodeID) {
-      fitGraph();
+  const searchInput = byId("search-input");
+  const handleSearchChange = (event) => {
+    currentState.query = event.target.value || "";
+    if (hasActiveSearch()) {
+      currentState.selectedNodeID = null;
     }
+    applyVisualState(selection);
+    fitGraph();
   };
+  searchInput.oninput = handleSearchChange;
+  searchInput.onsearch = handleSearchChange;
 
   byId("build-graph").onclick = async (event) => {
     const button = event.currentTarget;

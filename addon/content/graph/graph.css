@@ -163,13 +163,13 @@ body {
 
 .warning-panel {
   position: absolute;
-  left: 12px;
-  bottom: 14px;
+  left: 24px;
+  bottom: 24px;
   z-index: 40;
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  width: min(440px, calc(100% - 24px));
+  width: min(440px, calc(100% - 48px));
   max-height: min(30vh, 220px);
   overflow: auto;
   margin: 0;
