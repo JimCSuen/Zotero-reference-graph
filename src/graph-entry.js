@@ -22,6 +22,7 @@ let currentState = {
   simulation: null,
   simulationFrame: null,
   simulationNodes: new Map(),
+  warningTimer: null,
 };
 
 window.__citationGraphBundleLoaded = true;
@@ -287,9 +288,30 @@ function formatCount(value) {
   return new Intl.NumberFormat().format(value || 0);
 }
 
+function clearWarningTimer() {
+  if (currentState.warningTimer != null) {
+    window.clearTimeout(currentState.warningTimer);
+    currentState.warningTimer = null;
+  }
+}
+
+function hideWarnings() {
+  clearWarningTimer();
+  const panel = byId("warnings-panel");
+  if (panel) {
+    panel.hidden = true;
+  }
+}
+
 function renderWarnings(warnings) {
   const panel = byId("warnings-panel");
   const list = byId("warnings-list");
+  const closeButton = byId("warnings-close");
+  if (!panel || !list) {
+    return;
+  }
+
+  clearWarningTimer();
   list.textContent = "";
 
   if (!warnings || !warnings.length) {
@@ -298,11 +320,16 @@ function renderWarnings(warnings) {
   }
 
   panel.hidden = false;
+  if (closeButton) {
+    closeButton.onclick = hideWarnings;
+  }
   for (const warning of warnings) {
     const li = document.createElement("li");
     li.textContent = warning;
     list.appendChild(li);
   }
+
+  currentState.warningTimer = window.setTimeout(hideWarnings, 10000);
 }
 
 function normalizeSearch(value) {

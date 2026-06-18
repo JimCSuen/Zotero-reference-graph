@@ -173,6 +173,10 @@ const CitationGraphPlugin = {
   },
 
   addToWindow(window) {
+    if (!window.ZoteroPane) {
+      return;
+    }
+
     const doc = window.document;
     this.addToolsMenuItems(window, doc);
     this.addMenubarButtons(window, doc);
@@ -414,16 +418,6 @@ const CitationGraphPlugin = {
       }
     }
     const state = this.windowStates.get(window);
-    if (state && state.tabID) {
-      const tabs = this.getZoteroTabs(window);
-      try {
-        if (tabs && this.isGraphTabOpen(window, state)) {
-          tabs.close(state.tabID);
-        }
-      } catch (error) {
-        this.log(`Failed to close citation graph tab: ${error}`);
-      }
-    }
     this.removeEmbeddedGraphPanel(window);
     this.windowStates.delete(window);
     this.windowElements.delete(window);
@@ -749,10 +743,6 @@ const CitationGraphPlugin = {
   ensureWindowState(hostWindow) {
     if (!this.windowStates.has(hostWindow)) {
       this.windowStates.set(hostWindow, {
-        tabID: null,
-        tabContainer: null,
-        tabFrame: null,
-        tabReady: null,
         panel: null,
         panelMountTarget: null,
         panelMountPreviousPosition: null,
@@ -762,32 +752,6 @@ const CitationGraphPlugin = {
       });
     }
     return this.windowStates.get(hostWindow);
-  },
-
-  getZoteroTabs(hostWindow) {
-    return hostWindow && hostWindow.Zotero_Tabs && typeof hostWindow.Zotero_Tabs.add === "function"
-      ? hostWindow.Zotero_Tabs
-      : null;
-  },
-
-  isGraphTabOpen(hostWindow, state) {
-    const tabs = this.getZoteroTabs(hostWindow);
-    if (!tabs || !state?.tabID || typeof tabs.getTabInfo !== "function") {
-      return false;
-    }
-
-    try {
-      return !!tabs.getTabInfo(state.tabID);
-    } catch (_error) {
-      return false;
-    }
-  },
-
-  clearGraphTabState(state) {
-    state.tabID = null;
-    state.tabContainer = null;
-    state.tabFrame = null;
-    state.tabReady = null;
   },
 
   createFrameReadyPromise(frame) {
@@ -804,69 +768,6 @@ const CitationGraphPlugin = {
         { once: true },
       );
     });
-  },
-
-  async ensureGraphTab(hostWindow) {
-    // Prefer a real Zotero tab so the graph stays inside the main app chrome.
-    const tabs = this.getZoteroTabs(hostWindow);
-    if (!tabs) {
-      return null;
-    }
-
-    const state = this.ensureWindowState(hostWindow);
-    if (this.isGraphTabOpen(hostWindow, state) && state.tabFrame) {
-      tabs.select(state.tabID);
-      return {
-        frame: state.tabFrame,
-        ready: state.tabReady,
-        panel: null,
-      };
-    }
-
-    this.clearGraphTabState(state);
-
-    let tab;
-    try {
-      tab = tabs.add({
-        type: "citation-graph",
-        title: "Citation Graph",
-        select: true,
-        onClose: () => {
-          if (state.tabID === tab.id) {
-            this.clearGraphTabState(state);
-          }
-        },
-      });
-    } catch (error) {
-      this.log(`Could not create a Zotero tab for the graph: ${error}`);
-      return null;
-    }
-
-    const doc = hostWindow.document;
-    const frame = doc.createElement("iframe");
-    frame.id = "citation-graph-tab-frame";
-    frame.setAttribute("src", this.graphURL);
-    frame.style.width = "100%";
-    frame.style.height = "100%";
-    frame.style.border = "0";
-    frame.style.background = "#ffffff";
-
-    tab.container.style.display = "flex";
-    tab.container.style.flexDirection = "column";
-    tab.container.style.minHeight = "0";
-    tab.container.style.height = "100%";
-    tab.container.appendChild(frame);
-
-    state.tabID = tab.id;
-    state.tabContainer = tab.container;
-    state.tabFrame = frame;
-    state.tabReady = this.createFrameReadyPromise(frame);
-
-    return {
-      frame: state.tabFrame,
-      ready: state.tabReady,
-      panel: null,
-    };
   },
 
   getGraphMountTarget(hostWindow) {
@@ -916,17 +817,6 @@ const CitationGraphPlugin = {
       return false;
     }
 
-    const tabs = this.getZoteroTabs(hostWindow);
-    if (tabs && this.isGraphTabOpen(hostWindow, state)) {
-      try {
-        tabs.close(state.tabID);
-        this.clearGraphTabState(state);
-        return true;
-      } catch (error) {
-        this.log(`Failed to close citation graph tab: ${error}`);
-      }
-    }
-
     return this.removeEmbeddedGraphPanel(hostWindow);
   },
 
@@ -954,45 +844,9 @@ const CitationGraphPlugin = {
     panel.style.flexDirection = "column";
     panel.style.minWidth = "0";
     panel.style.overflow = "hidden";
-    panel.style.border = "1px solid #cfd8e3";
+    panel.style.border = "0";
     panel.style.background = "#ffffff";
-    panel.style.boxShadow = "0 10px 30px rgba(15, 23, 42, 0.18)";
-
-    const header = doc.createElement("div");
-    header.id = "citation-graph-embedded-header";
-    header.style.display = "flex";
-    header.style.alignItems = "center";
-    header.style.justifyContent = "space-between";
-    header.style.flex = "0 0 auto";
-    header.style.minHeight = "42px";
-    header.style.padding = "0 12px";
-    header.style.borderBottom = "1px solid #d8e0ec";
-    header.style.background = "#f8fafc";
-
-    const title = doc.createElement("strong");
-    title.textContent = "Citation Graph";
-    title.style.fontSize = "13px";
-    title.style.fontWeight = "600";
-    title.style.color = "#111827";
-
-    const closeButton = doc.createElement("button");
-    closeButton.id = "citation-graph-embedded-close-button";
-    closeButton.type = "button";
-    closeButton.textContent = "Close";
-    closeButton.setAttribute("aria-label", "Close Citation Graph");
-    closeButton.style.minHeight = "28px";
-    closeButton.style.border = "1px solid #cbd5e1";
-    closeButton.style.borderRadius = "6px";
-    closeButton.style.padding = "4px 10px";
-    closeButton.style.background = "#ffffff";
-    closeButton.style.color = "#111827";
-    closeButton.style.cursor = "pointer";
-    closeButton.addEventListener("click", () => {
-      this.closeGraphView(hostWindow);
-    });
-
-    header.appendChild(title);
-    header.appendChild(closeButton);
+    panel.style.boxShadow = "none";
 
     const frame = doc.createElement("iframe");
     frame.id = "citation-graph-embedded-frame";
@@ -1004,7 +858,6 @@ const CitationGraphPlugin = {
     frame.style.border = "0";
     frame.style.background = "#ffffff";
 
-    panel.appendChild(header);
     panel.appendChild(frame);
 
     const computedPosition = hostWindow.getComputedStyle(mountTarget).position;
@@ -1025,11 +878,6 @@ const CitationGraphPlugin = {
   },
 
   async ensureInAppGraphView(hostWindow) {
-    const tabState = await this.ensureGraphTab(hostWindow);
-    if (tabState) {
-      return tabState;
-    }
-
     return this.ensureEmbeddedGraphPanel(hostWindow);
   },
 
@@ -1178,10 +1026,9 @@ const CitationGraphPlugin = {
 
   async refreshEmbeddedGraph(hostWindow, graphData = null) {
     const state = this.windowStates.get(hostWindow);
-    const hasOpenTab = state && this.isGraphTabOpen(hostWindow, state) && state.tabFrame;
     const hasVisiblePanel =
       state && state.panel && state.panel.style.display !== "none";
-    if (!hasOpenTab && !hasVisiblePanel) {
+    if (!hasVisiblePanel) {
       return;
     }
     await this.pushGraphPayload(

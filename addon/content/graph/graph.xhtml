@@ -20,7 +20,13 @@
             <input id="search-input" type="search" placeholder="Title, author, DOI" />
           </label>
           <button id="build-graph" type="button">Build</button>
-          <button id="close-graph" type="button">Close</button>
+          <button
+            id="close-graph"
+            class="icon-button close-graph-button"
+            type="button"
+            title="Close Citation Graph"
+            aria-label="Close Citation Graph"
+          >&#215;</button>
         </div>
       </header>
 
@@ -29,8 +35,23 @@
         <pre id="error-message"></pre>
       </section>
 
-      <section class="warning-panel" id="warnings-panel" hidden="hidden">
-        <h2>Warnings</h2>
+      <section
+        class="warning-panel warning-toast"
+        id="warnings-panel"
+        hidden="hidden"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="warning-toast-header">
+          <h2><span class="warning-mark" aria-hidden="true">!</span> Warnings</h2>
+          <button
+            id="warnings-close"
+            class="warning-close"
+            type="button"
+            title="Dismiss warnings"
+            aria-label="Dismiss warnings"
+          >&#215;</button>
+        </div>
         <ul id="warnings-list"></ul>
       </section>
 
@@ -38,9 +59,6 @@
         <section class="graph-panel">
           <div class="graph-stage">
             <div id="graph"></div>
-            <div class="graph-help">
-              Scroll to zoom, drag nodes to pin them, and click empty space to clear focus.
-            </div>
           </div>
         </section>
         <aside class="detail-panel">
