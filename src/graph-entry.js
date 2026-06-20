@@ -340,6 +340,26 @@ function hasActiveSearch() {
   return !!normalizeSearch(currentState.query);
 }
 
+function requestGraphClose(hostWindow = null) {
+  const api = getCitationGraphApi();
+  try {
+    if (hostWindow && api && typeof api.closeGraphView === "function") {
+      if (api.closeGraphView(hostWindow)) {
+        return true;
+      }
+    }
+  } catch (error) {
+    debugLog("requestGraphClose: direct API close failed", error);
+  }
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: "citation-graph:close" }, "*");
+    return true;
+  }
+
+  return false;
+}
+
 function truncateLabel(value, limit = 34) {
   const text = String(value || "").trim();
   if (!text) {
@@ -836,6 +856,7 @@ function createSelectionController(payload) {
       }
 
       hostWindow.focus();
+      requestGraphClose(hostWindow);
       actionStatus.textContent = `Focused Zotero item ${nodeData.itemID}.`;
     } catch (error) {
       actionStatus.textContent = `Could not focus item: ${error.message || error}`;
@@ -1064,27 +1085,24 @@ function applyVisualState(selection) {
       visibleElements.addClass("is-muted");
     }
 
-    if (selectedNode && !searchActive) {
-      const focusedNeighborhood = selectedNode.closedNeighborhood().filter(":visible");
-      focusedNeighborhood.removeClass("is-muted").addClass("is-neighbor");
-      selectedNode.removeClass("is-neighbor").addClass("is-selected");
-    }
-
     if (searchActive && matches.length) {
       matches.closedNeighborhood().filter(":visible").removeClass("is-muted").addClass("is-neighbor");
       matches.removeClass("is-muted").addClass("is-match");
       matches.connectedEdges().filter(":visible").removeClass("is-muted");
     }
+
+    if (selectedNode) {
+      const focusedNeighborhood = selectedNode.closedNeighborhood().filter(":visible");
+      focusedNeighborhood.removeClass("is-muted").addClass("is-neighbor");
+      selectedNode.removeClass("is-neighbor").addClass("is-selected");
+    }
   });
 
-  if (selectedNode && !searchActive) {
+  if (selectedNode) {
     selection.showNode(extractNodeData(selectedNode));
     return;
   }
 
-  if (searchActive) {
-    currentState.selectedNodeID = null;
-  }
   selection.clear();
 }
 
@@ -1110,19 +1128,19 @@ function getFitCollection() {
     return null;
   }
 
-  if (hasActiveSearch()) {
-    const matches = getSearchMatches();
-    if (matches.length) {
-      const focusedMatches = matches.closedNeighborhood().filter(":visible");
-      return focusedMatches.length ? focusedMatches : matches;
-    }
-  }
-
   const selectedNode = getSelectedNode();
   if (selectedNode) {
     const focused = selectedNode.closedNeighborhood().filter(":visible");
     if (focused.length) {
       return focused;
+    }
+  }
+
+  if (hasActiveSearch()) {
+    const matches = getSearchMatches();
+    if (matches.length) {
+      const focusedMatches = matches.closedNeighborhood().filter(":visible");
+      return focusedMatches.length ? focusedMatches : matches;
     }
   }
 
@@ -1297,17 +1315,9 @@ function bindControls(payload, selection) {
     closeButton.onclick = async () => {
       const actionStatus = byId("action-status");
       const hostWindow = resolveHostWindow(payload);
-      const api = getCitationGraphApi();
 
       try {
-        if (hostWindow && api && typeof api.closeGraphView === "function") {
-          if (api.closeGraphView(hostWindow)) {
-            return;
-          }
-        }
-
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage({ type: "citation-graph:close" }, "*");
+        if (requestGraphClose(hostWindow)) {
           return;
         }
 
