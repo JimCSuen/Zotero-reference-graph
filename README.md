@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This plugin is a modified version of Thrillcrazyer's one (https://github.com/Thrillcrazyer/Zotero-Citation-Graph).
+This plugin is a modified version of Thrillcrazyer's one (https://github.com/Thrillcrazyer/Zotero-Citation-Graph), while the modifications are done with Codex.
 
 Interactive Zotero plugin for visualizing citation relationships between papers in the current Zotero library, collection, or visible item list.
 
